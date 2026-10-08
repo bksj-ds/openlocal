@@ -4,7 +4,7 @@
 
 OpenLocal detects your hardware, recommends a reproducible model/runtime profile, deploys it securely, and measures its real performance.
 
-> Project status: **pre-alpha**. The CLI contract and hardware detection are under active development. Installation support is intentionally limited to Ubuntu 22.04/24.04 with NVIDIA Docker for v0.1.
+> Project status: **pre-alpha**. Hardware detection and rule-based recommendations are implemented. v0.1 targets Ubuntu 22.04/24.04 and Windows 10 21H2+/Windows 11 with an NVIDIA GPU.
 
 [한국어 README](README.ko.md)
 
@@ -16,6 +16,8 @@ Requires Python 3.11 or newer.
 python -m pip install -e .
 openlocal doctor
 openlocal doctor --json
+openlocal recommend
+openlocal recommend --json
 ```
 
 The v0.1 workflow is deliberately small:
@@ -30,7 +32,7 @@ openlocal status
 openlocal bench
 ```
 
-Only `doctor` is implemented today. Unimplemented commands fail explicitly instead of pretending to make changes.
+`doctor` and `recommend` are implemented. Unimplemented commands fail explicitly instead of pretending to make changes.
 
 ## Why OpenLocal?
 
@@ -55,7 +57,12 @@ The installer is a delivery mechanism. The product is hardware-aware configurati
 
 ## Current scope
 
-v0.1 targets one reliable path: Ubuntu 22.04/24.04, an NVIDIA GPU, Docker Engine, Docker Compose, and NVIDIA Container Toolkit. See [NON_GOALS.md](NON_GOALS.md) for what is intentionally excluded and [ROADMAP.md](ROADMAP.md) for release gates.
+v0.1 targets two host paths with the same Linux-container runtime:
+
+- Ubuntu 22.04/24.04, NVIDIA GPU, Docker Engine, Compose v2, and NVIDIA Container Toolkit.
+- Windows 10 21H2+ or Windows 11, NVIDIA GPU, WSL2, and Docker Desktop using Linux containers.
+
+vLLM does not run natively on Windows; OpenLocal uses its officially documented WSL2 route. See [Windows support](docs/WINDOWS.md), [NON_GOALS.md](NON_GOALS.md), and [ROADMAP.md](ROADMAP.md).
 
 ## Documentation
 

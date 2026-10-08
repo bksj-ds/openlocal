@@ -23,7 +23,7 @@ python -m unittest discover -s tests -v
 python -m compileall -q cli
 ```
 
-Use Python 3.11 or newer. Hardware probes must tolerate missing binaries, non-NVIDIA systems, permission failures, timeouts, and malformed command output. Unit tests must not require a GPU or Docker daemon.
+Use Python 3.11 or newer. Hardware probes must tolerate missing binaries, non-NVIDIA systems, permission failures, timeouts, localized/UTF-16 Windows command output, and malformed command output. Unit tests must not require a GPU or Docker daemon.
 
 ## Profiles
 
@@ -34,4 +34,3 @@ Profiles and examples must never contain tokens, usernames, hostnames, private p
 ## Security
 
 Generated services bind to loopback unless the user explicitly opts into network exposure. Do not weaken authentication, CORS, host mounts, or container privileges for convenience.
-

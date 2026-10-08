@@ -21,9 +21,9 @@ Target: **80% or better** among supported machines.
 
 ## Week 1: one reliable execution path
 
-- Freeze the CLI contract and profile boundary.
-- Complete `doctor` on supported and unsupported hosts.
-- Add rule-based `recommend` and validated profiles.
+- [x] Freeze the CLI contract and profile boundary.
+- [x] Complete `doctor` on Ubuntu, Windows/WSL2, and unsupported hosts.
+- [x] Add rule-based `recommend` and validated profiles.
 - Generate a pinned vLLM Compose deployment.
 - Produce the first token through an OpenAI-compatible API.
 - Add optional Open WebUI orchestration, status, and logs.
@@ -59,4 +59,3 @@ Target: **80% or better** among supported machines.
 - Zero known destructive bugs
 - Reproducible benchmark results
 - Complete quickstart and security documentation
-

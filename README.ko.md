@@ -4,7 +4,7 @@
 
 OpenLocal은 하드웨어를 감지하고 재현 가능한 모델/런타임 프로필을 추천한 뒤, 안전하게 배포하고 실제 성능을 측정합니다.
 
-> 현재 상태: **pre-alpha**. v0.1 설치 지원 범위는 의도적으로 Ubuntu 22.04/24.04 + NVIDIA Docker로 제한합니다.
+> 현재 상태: **pre-alpha**. v0.1은 Ubuntu 22.04/24.04와 Windows 10 21H2+/Windows 11의 NVIDIA GPU 환경을 지원 대상으로 합니다.
 
 ## 빠른 시작
 
@@ -14,6 +14,8 @@ Python 3.11 이상이 필요합니다.
 python -m pip install -e .
 openlocal doctor
 openlocal doctor --json
+openlocal recommend
+openlocal recommend --json
 ```
 
 v0.1의 사용자 흐름은 다음 네 단계에 집중합니다.
@@ -22,7 +24,7 @@ v0.1의 사용자 흐름은 다음 네 단계에 집중합니다.
 Hardware -> Recommendation -> Run -> Benchmark
 ```
 
-현재 구현된 명령은 `doctor`입니다. 나머지 명령은 CLI 계약에 먼저 고정하고 차례대로 구현합니다.
+현재 구현된 명령은 `doctor`와 `recommend`입니다. 나머지 명령은 CLI 계약에 따라 차례대로 구현합니다.
 
 ## 차별점
 
@@ -43,3 +45,4 @@ Hardware -> Recommendation -> Run -> Benchmark
 
 자세한 범위와 일정은 [NON_GOALS.md](NON_GOALS.md), [ROADMAP.md](ROADMAP.md), [CLI 명세](docs/CLI_SPEC.md)를 참고하세요.
 
+Windows에서는 vLLM을 네이티브 실행하지 않습니다. WSL2와 Docker Desktop의 Linux container GPU passthrough를 사용합니다. 요구사항은 [Windows 지원 문서](docs/WINDOWS.md)에 정리되어 있습니다.

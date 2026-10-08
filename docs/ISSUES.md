@@ -2,6 +2,8 @@
 
 These specifications are ready to be copied into GitHub Issues after a remote repository is created. Each issue is independently assignable.
 
+Implementation status: #1, #2, #4, and #5 have initial implementations. #3 has host and prerequisite detection; remediation guidance and container-level GPU validation remain.
+
 ## #1 Implement hardware detection
 
 **Problem:** Recommendations need a stable, inspectable hardware snapshot.
@@ -26,11 +28,11 @@ These specifications are ready to be copied into GitHub Issues after a remote re
 
 **Problem:** Installation failures currently happen late and produce poor diagnostics.
 
-**Acceptance criteria:** Distinguish CLI presence from daemon availability; detect Compose v2 and NVIDIA Container Toolkit; report versions when available.
+**Acceptance criteria:** Distinguish CLI presence from daemon availability; detect Compose v2 and NVIDIA Container Toolkit on Linux; detect WSL2 and Linux-container mode on Windows; report versions when available.
 
 **Test:** Mock successful, missing, permission-denied, and daemon-unreachable outputs.
 
-**Docs update:** Add remediation links for Ubuntu 22.04/24.04.
+**Docs update:** Add remediation links for Ubuntu 22.04/24.04 and Windows WSL2/Docker Desktop.
 
 ## #4 Define hardware profile schema
 
@@ -101,4 +103,3 @@ These specifications are ready to be copied into GitHub Issues after a remote re
 **Test:** Schema validation, golden report, privacy-field rejection, and interrupted-write tests.
 
 **Docs update:** Document every field, unit, and privacy guarantee.
-

@@ -18,7 +18,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Topic :: System :: Systems Administration",
 ]
-dependencies = []
+dependencies = ["PyYAML>=6.0.2,<7"]
 
 [project.scripts]
 openlocal = "openlocal.cli:main"
@@ -28,3 +28,7 @@ package-dir = { "" = "cli" }
 
 [tool.setuptools.packages.find]
 where = ["cli"]
+
+[tool.setuptools.data-files]
+"share/openlocal/profiles" = ["profiles/schema-v1.json"]
+"share/openlocal/profiles/models" = ["profiles/models/*.yaml"]

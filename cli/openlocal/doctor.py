@@ -10,6 +10,7 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 from typing import Callable, Sequence
 
 
@@ -36,21 +37,40 @@ def _run(command: Sequence[str]) -> CommandResult:
         result = subprocess.run(
             command,
             capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
             timeout=8,
             check=False,
         )
-        return CommandResult(result.returncode, result.stdout.strip(), result.stderr.strip())
+        return CommandResult(
+            result.returncode,
+            _decode_output(result.stdout).strip(),
+            _decode_output(result.stderr).strip(),
+        )
     except (FileNotFoundError, PermissionError, subprocess.TimeoutExpired) as exc:
         return CommandResult(127, "", str(exc))
 
 
-def _linux_distribution() -> tuple[str, str | None]:
+def _decode_output(value: bytes) -> str:
+    """Decode normal UTF-8 output and UTF-16 output emitted by wsl.exe."""
+    if not value:
+        return ""
+    if value.startswith((b"\xff\xfe", b"\xfe\xff")) or value[:80].count(b"\x00") > 8:
+        return value.decode("utf-16", errors="replace")
+    return value.decode("utf-8", errors="replace")
+
+
+def _os_details() -> tuple[str, str | None, int | None]:
+    if platform.system() == "Windows":
+        try:
+            build = sys.getwindowsversion().build
+        except AttributeError:
+            build = None
+        name = "Windows 11" if build is not None and build >= 22000 else "Windows 10"
+        version = platform.win32_ver()[1] or platform.release() or None
+        return name, version, build
+
     release_file = Path("/etc/os-release")
     if not release_file.exists():
-        return platform.system() or "Unknown", platform.release() or None
+        return platform.system() or "Unknown", platform.release() or None, None
     values: dict[str, str] = {}
     try:
         for raw_line in release_file.read_text(encoding="utf-8").splitlines():
@@ -59,8 +79,8 @@ def _linux_distribution() -> tuple[str, str | None]:
             key, value = raw_line.split("=", 1)
             values[key] = value.strip().strip('"')
     except OSError:
-        return platform.system() or "Unknown", platform.release() or None
-    return values.get("PRETTY_NAME", values.get("NAME", "Linux")), values.get("VERSION_ID")
+        return platform.system() or "Unknown", platform.release() or None, None
+    return values.get("PRETTY_NAME", values.get("NAME", "Linux")), values.get("VERSION_ID"), None
 
 
 def _memory_gb() -> float | None:
@@ -170,32 +190,67 @@ def _toolkit_probe(runner: Runner) -> tuple[bool, str | None]:
     return False, None
 
 
-def collect_snapshot(runner: Runner = _run) -> dict[str, object]:
-    os_name, os_version = _linux_distribution()
-    gpus = detect_nvidia_gpus(runner)
-    docker_ok, docker_version = _version_probe(
-        runner, ["docker", "version", "--format", "{{.Server.Version}}"]
+def _wsl_probe(runner: Runner) -> tuple[bool, str | None]:
+    if platform.system() != "Windows":
+        return False, None
+    status = runner(["wsl.exe", "--list", "--verbose"])
+    if status.returncode != 0:
+        return False, None
+    has_wsl2_distribution = any(
+        re.search(r"\s2\s*$", line) is not None for line in status.stdout.splitlines()
     )
+    if not has_wsl2_distribution:
+        return False, None
+    version = runner(["wsl.exe", "--version"])
+    match = re.search(r"([0-9]+(?:\.[0-9]+){1,3})", version.stdout)
+    return True, match.group(1) if match else None
+
+
+def _docker_probe(runner: Runner) -> tuple[bool, str | None, str | None]:
+    result = runner(
+        ["docker", "version", "--format", "{{.Server.Version}}|{{.Server.Os}}"]
+    )
+    if result.returncode != 0:
+        return False, None, None
+    parts = [part.strip() for part in result.stdout.split("|", 1)]
+    version = parts[0] or None
+    server_os = parts[1].lower() if len(parts) == 2 and parts[1] else None
+    return True, version, server_os
+
+
+def collect_snapshot(runner: Runner = _run) -> dict[str, object]:
+    system = platform.system()
+    os_name, os_version, os_build = _os_details()
+    gpus = detect_nvidia_gpus(runner)
+    docker_ok, docker_version, docker_server_os = _docker_probe(runner)
     compose_ok, compose_version = _version_probe(runner, ["docker", "compose", "version", "--short"])
     toolkit_ok, toolkit_version = _toolkit_probe(runner)
+    wsl_ok, wsl_version = _wsl_probe(runner)
     disk = shutil.disk_usage(Path.cwd())
-    supported_os = platform.system() == "Linux" and "Ubuntu" in os_name and os_version in {"22.04", "24.04"}
-    ready = supported_os and bool(gpus) and docker_ok and compose_ok and toolkit_ok
+    linux_supported = system == "Linux" and "Ubuntu" in os_name and os_version in {"22.04", "24.04"}
+    windows_supported = system == "Windows" and os_build is not None and os_build >= 19044
+    supported_os = linux_supported or windows_supported
+    platform_ready = toolkit_ok if linux_supported else wsl_ok and docker_server_os == "linux"
+    ready = supported_os and bool(gpus) and docker_ok and compose_ok and platform_ready
     blockers: list[str] = []
     if not supported_os:
-        blockers.append("v0.1 supports Ubuntu 22.04 or 24.04")
+        blockers.append("v0.1 supports Ubuntu 22.04/24.04 or Windows 10 21H2+/Windows 11")
     if not gpus:
         blockers.append("no NVIDIA GPU detected")
     if not docker_ok:
         blockers.append("Docker Engine is unavailable")
     if not compose_ok:
         blockers.append("Docker Compose v2 is unavailable")
-    if not toolkit_ok:
+    if linux_supported and not toolkit_ok:
         blockers.append("NVIDIA Container Toolkit is unavailable")
+    if windows_supported and not wsl_ok:
+        blockers.append("WSL2 is unavailable or has no version 2 distribution")
+    if windows_supported and docker_ok and docker_server_os != "linux":
+        blockers.append("Docker Desktop is not using Linux containers")
 
     return {
-        "schema_version": "1.0",
-        "os": {"name": os_name, "version": os_version},
+        "schema_version": "1.1",
+        "os": {"name": os_name, "version": os_version, "build": os_build},
         "architecture": platform.machine() or "unknown",
         "cpu": _cpu_name(runner),
         "ram_gb": _memory_gb(),
@@ -207,9 +262,25 @@ def collect_snapshot(runner: Runner = _run) -> dict[str, object]:
         },
         "driver": gpus[0].driver if gpus else None,
         "cuda": _cuda_version(runner),
-        "docker": {"available": docker_ok, "version": docker_version},
+        "docker": {
+            "available": docker_ok,
+            "version": docker_version,
+            "server_os": docker_server_os,
+        },
         "docker_compose": {"available": compose_ok, "version": compose_version},
-        "nvidia_container_toolkit": {"available": toolkit_ok, "version": toolkit_version},
+        "nvidia_container_toolkit": {
+            "available": toolkit_ok,
+            "version": toolkit_version,
+            "required": linux_supported,
+        },
+        "wsl": {"available": wsl_ok, "version": wsl_version, "required": windows_supported},
+        "runtime_path": (
+            "docker-desktop-wsl2"
+            if windows_supported
+            else "docker-linux"
+            if linux_supported
+            else None
+        ),
         "disk": {
             "path": str(Path.cwd()),
             "free_gb": round(disk.free / 1024**3, 1),
@@ -231,10 +302,12 @@ def format_human(snapshot: dict[str, object]) -> str:
     docker = snapshot["docker"]
     compose = snapshot["docker_compose"]
     toolkit = snapshot["nvidia_container_toolkit"]
+    wsl = snapshot["wsl"]
     disk = snapshot["disk"]
     status = snapshot["status"]
     assert isinstance(os_info, dict) and isinstance(gpu_info, dict)
     assert isinstance(docker, dict) and isinstance(compose, dict) and isinstance(toolkit, dict)
+    assert isinstance(wsl, dict)
     assert isinstance(disk, dict) and isinstance(status, dict)
 
     devices = gpu_info.get("devices", [])
@@ -257,7 +330,9 @@ def format_human(snapshot: dict[str, object]) -> str:
         f"CUDA                  {_display(snapshot.get('cuda'))}",
         f"Docker                {'OK ' + str(docker.get('version') or '') if docker.get('available') else 'Not available'}".rstrip(),
         f"Docker Compose        {'OK ' + str(compose.get('version') or '') if compose.get('available') else 'Not available'}".rstrip(),
-        f"NVIDIA Toolkit        {'OK ' + str(toolkit.get('version') or '') if toolkit.get('available') else 'Not available'}".rstrip(),
+        f"WSL2                  {'OK ' + str(wsl.get('version') or '') if wsl.get('available') else 'Not required' if not wsl.get('required') else 'Not available'}".rstrip(),
+        f"NVIDIA Toolkit        {'OK ' + str(toolkit.get('version') or '') if toolkit.get('available') else 'Not required' if not toolkit.get('required') else 'Not available'}".rstrip(),
+        f"Runtime path          {_display(snapshot.get('runtime_path'))}",
         f"Disk free             {_display(disk.get('free_gb'), ' GB')}",
         "",
         f"Status                {status.get('message')}",
@@ -270,4 +345,3 @@ def format_human(snapshot: dict[str, object]) -> str:
 
 def as_json(snapshot: dict[str, object]) -> str:
     return json.dumps(snapshot, indent=2, ensure_ascii=False, sort_keys=True)
-

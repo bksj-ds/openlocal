@@ -19,11 +19,18 @@ openlocal <command> --help
 
 Read-only hardware and dependency inspection. It reports OS, architecture, CPU, RAM, GPUs, aggregate VRAM, driver, CUDA, Docker Engine, Docker Compose, NVIDIA Container Toolkit, and free disk space.
 
-`doctor` must complete when NVIDIA, Docker, or their supporting commands are absent. Readiness is strict only for the v0.1 supported path: Ubuntu 22.04/24.04, NVIDIA GPU, Docker, Compose, and NVIDIA Container Toolkit.
+`doctor` must complete when NVIDIA, Docker, or their supporting commands are absent. Readiness is strict for either supported path:
+
+- Ubuntu 22.04/24.04, NVIDIA GPU, Docker, Compose v2, and NVIDIA Container Toolkit.
+- Windows 10 build 19044+ or Windows 11, NVIDIA GPU, WSL2, Docker Desktop, and Linux containers.
+
+The NVIDIA Container Toolkit host binary is not required on Windows because Docker Desktop provides the WSL2 GPU container path.
 
 ## `openlocal recommend [--json]`
 
 Match detected hardware to versioned profiles and return FAST, BALANCED, and MAX QUALITY options where valid. The response explains why each profile matches and identifies the source of memory estimates.
+
+Initial estimates are marked `provisional`. A profile becomes `benchmarked` only after its hardware/runtime combination passes the reproducible benchmark workflow.
 
 ## `openlocal install [--profile ID] [--ui] [--yes]`
 
@@ -46,4 +53,3 @@ Lifecycle commands operate only on the OpenLocal project and generated files. `s
 Run warm-up plus measured workloads at concurrency 1, 2, 4, 8, and 16. Reports include benchmark and schema versions, timestamps, hardware, model, runtime configuration, workload definition, TTFT, ITL, output tokens/s, total throughput, requests/s, VRAM, GPU utilization, and latency p50/p95.
 
 `--submit` is explicit opt-in. Before submission, the CLI displays the exact payload and confirms that it includes no prompt content, hostname, username, or stored IP address.
-

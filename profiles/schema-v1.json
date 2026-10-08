@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlocal.dev/schemas/profile-v1.json",
+  "title": "OpenLocal model/runtime profile",
+  "type": "object",
+  "required": ["schema_version", "id", "hardware", "model", "backend", "runtime", "estimates"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]+$"},
+    "hardware": {
+      "type": "object",
+      "required": ["gpu_vendor", "min_vram_gb", "min_ram_gb", "min_gpu_count"]
+    },
+    "model": {
+      "type": "object",
+      "required": ["id", "family", "parameters_b", "quantization"]
+    },
+    "backend": {
+      "type": "object",
+      "required": ["engine", "image"]
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["max_model_len", "gpu_memory_utilization", "max_num_seqs"]
+    },
+    "estimates": {
+      "type": "object",
+      "required": ["vram_gb", "status", "basis"]
+    }
+  }
+}

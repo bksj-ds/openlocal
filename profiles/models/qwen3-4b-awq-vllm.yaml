@@ -1,0 +1,23 @@
+schema_version: 1
+id: qwen3-4b-awq-vllm
+hardware:
+  gpu_vendor: nvidia
+  min_vram_gb: 5
+  min_ram_gb: 16
+  min_gpu_count: 1
+model:
+  id: Qwen/Qwen3-4B-AWQ
+  family: qwen3
+  parameters_b: 4
+  quantization: awq
+backend:
+  engine: vllm
+  image: vllm/vllm-openai:v0.15.0
+runtime:
+  max_model_len: 16384
+  gpu_memory_utilization: 0.88
+  max_num_seqs: 4
+estimates:
+  vram_gb: 5
+  status: provisional
+  basis: Quantized weight estimate plus runtime and KV-cache allowance; benchmark validation pending.
