@@ -1,0 +1,41 @@
+name: Scoped feature
+description: Propose one contribution to the current hardware-to-benchmark milestone.
+title: "[Feature]: "
+labels: ["triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the user-visible problem, not a preferred implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List observable completion conditions.
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Test plan
+      description: Explain how this works without depending on one contributor's machine.
+    validations:
+      required: true
+  - type: textarea
+    id: docs
+    attributes:
+      label: Documentation update
+      description: Name the user or contributor documentation that changes.
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: This is not excluded by NON_GOALS.md.
+          required: true
+

@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Help and hardware questions
+    url: https://github.com/openlocal/openlocal/discussions
+    about: Use Discussions after the public repository is created.
+

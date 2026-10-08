@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openlocal"
+version = "0.0.1.dev0"
+description = "Find, run, and benchmark the best local LLM configuration for your hardware."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "OpenLocal contributors" }]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Environment :: Console",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: System :: Systems Administration",
+]
+dependencies = []
+
+[project.scripts]
+openlocal = "openlocal.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "cli" }
+
+[tool.setuptools.packages.find]
+where = ["cli"]

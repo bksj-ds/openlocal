@@ -1,0 +1,45 @@
+# OpenLocal
+
+> 내 하드웨어에서 가장 적합한 Local LLM 구성을 찾고, 실행하고, 성능까지 측정하는 오픈소스 도구.
+
+OpenLocal은 하드웨어를 감지하고 재현 가능한 모델/런타임 프로필을 추천한 뒤, 안전하게 배포하고 실제 성능을 측정합니다.
+
+> 현재 상태: **pre-alpha**. v0.1 설치 지원 범위는 의도적으로 Ubuntu 22.04/24.04 + NVIDIA Docker로 제한합니다.
+
+## 빠른 시작
+
+Python 3.11 이상이 필요합니다.
+
+```bash
+python -m pip install -e .
+openlocal doctor
+openlocal doctor --json
+```
+
+v0.1의 사용자 흐름은 다음 네 단계에 집중합니다.
+
+```text
+Hardware -> Recommendation -> Run -> Benchmark
+```
+
+현재 구현된 명령은 `doctor`입니다. 나머지 명령은 CLI 계약에 먼저 고정하고 차례대로 구현합니다.
+
+## 차별점
+
+설치 자체는 기본 기능입니다. OpenLocal의 제품 가치는 다음에 있습니다.
+
+- 하드웨어를 고려한 구성 추천
+- 실행 환경을 프로필로 재현
+- 동일한 방법론으로 측정한 벤치마크
+- 커뮤니티가 PR로 확장할 수 있는 하드웨어/모델 데이터
+
+## 기본 보안 원칙
+
+- 서비스는 기본적으로 `127.0.0.1`에만 바인딩
+- 텔레메트리 및 자동 업로드 없음
+- 벤치마크 제출은 명시적 opt-in과 전송 전 미리보기 필수
+- 컨테이너 버전 고정
+- 프로필, Compose, 로그, 벤치마크 결과에 비밀정보 저장 금지
+
+자세한 범위와 일정은 [NON_GOALS.md](NON_GOALS.md), [ROADMAP.md](ROADMAP.md), [CLI 명세](docs/CLI_SPEC.md)를 참고하세요.
+
