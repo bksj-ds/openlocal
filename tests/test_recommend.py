@@ -2,7 +2,15 @@ from __future__ import annotations
 
 import unittest
 
-from openlocal.recommend import ProfileError, load_profiles, recommend, validate_profile
+from openlocal.recommend import (
+    ProfileError,
+    load_gpu_profiles,
+    load_profiles,
+    match_gpu_profiles,
+    profile_compatible,
+    recommend,
+    validate_profile,
+)
 
 
 def snapshot(vram_gb: float, ram_gb: float = 64) -> dict:
@@ -27,6 +35,20 @@ class ProfileTests(unittest.TestCase):
         with self.assertRaisesRegex(ProfileError, "hardware"):
             validate_profile({"schema_version": 1, "id": "broken"})
 
+    def test_initial_gpu_profiles_match_known_models(self):
+        profiles = load_gpu_profiles()
+        self.assertEqual(len(profiles), 3)
+        matched = match_gpu_profiles(
+            {
+                "gpu": {
+                    "vendor": "nvidia",
+                    "devices": [{"vendor": "nvidia", "model": "NVIDIA GeForce RTX 4090"}],
+                }
+            },
+            profiles,
+        )
+        self.assertEqual(matched, ["nvidia-rtx-4090-24gb"])
+
 
 class RecommendationTests(unittest.TestCase):
     def setUp(self):
@@ -47,8 +69,15 @@ class RecommendationTests(unittest.TestCase):
         self.assertTrue(all(item.profile["hardware"]["min_ram_gb"] <= 16 for item in results))
 
     def test_no_gpu_has_no_recommendation(self):
-        result = recommend({"gpu": {"vendor": None, "count": 0, "devices": []}, "ram_gb": 64}, self.profiles)
+        result = recommend(
+            {"gpu": {"vendor": None, "count": 0, "devices": []}, "ram_gb": 64},
+            self.profiles,
+        )
         self.assertEqual(result, [])
+
+    def test_marketed_ram_rounding_is_tolerated(self):
+        profile = next(item for item in self.profiles if item["id"] == "qwen3-14b-awq-vllm")
+        self.assertTrue(profile_compatible(snapshot(24, 31.9), profile))
 
 
 if __name__ == "__main__":

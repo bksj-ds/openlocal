@@ -1,0 +1,8 @@
+schema_version: 1
+id: nvidia-rtx-4090-24gb
+vendor: nvidia
+match_names:
+  - NVIDIA GeForce RTX 4090
+vram_gb: 24
+status: provisional
+notes: Initial community benchmark target; runtime profiles remain benchmark-gated.

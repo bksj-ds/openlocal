@@ -1,0 +1,8 @@
+schema_version: 1
+id: nvidia-rtx-5090-32gb
+vendor: nvidia
+match_names:
+  - NVIDIA GeForce RTX 5090
+vram_gb: 32
+status: provisional
+notes: Initial community benchmark target; runtime profiles remain benchmark-gated.

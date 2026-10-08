@@ -22,6 +22,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e .
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m ruff check cli tests
+      - run: python -m ruff format --check cli tests
       - run: python -m unittest discover -s tests -v
       - run: python -m compileall -q cli
+      - run: python -m pip wheel . --no-deps --wheel-dir dist

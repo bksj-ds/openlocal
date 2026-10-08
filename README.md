@@ -32,7 +32,20 @@ openlocal status
 openlocal bench
 ```
 
-`doctor` and `recommend` are implemented. Unimplemented commands fail explicitly instead of pretending to make changes.
+The v0.1 alpha command surface is implemented:
+
+```bash
+openlocal install --dry-run
+openlocal install --ui
+openlocal start
+openlocal status
+openlocal logs vllm
+openlocal bench
+openlocal stop
+openlocal update
+```
+
+Installation completes only after an OpenAI-compatible model query and first-token request succeed. `--dry-run` renders the exact Compose configuration without writing files, pulling images, or starting containers.
 
 ## Why OpenLocal?
 
@@ -68,6 +81,8 @@ vLLM does not run natively on Windows; OpenLocal uses its officially documented 
 
 - [CLI contract](docs/CLI_SPEC.md)
 - [Architecture and data boundaries](docs/ARCHITECTURE.md)
+- [Installation and operations](docs/INSTALL.md)
+- [Benchmark methodology](benchmarks/METHODOLOGY.md)
 - [Initial issue backlog](docs/ISSUES.md)
 - [Contributing](CONTRIBUTING.md)
 

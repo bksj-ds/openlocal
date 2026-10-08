@@ -2,7 +2,7 @@
 
 These specifications are ready to be copied into GitHub Issues after a remote repository is created. Each issue is independently assignable.
 
-Implementation status: #1, #2, #4, and #5 have initial implementations. #3 has host and prerequisite detection; remediation guidance and container-level GPU validation remain.
+Implementation status: #1 through #10 have initial implementations and unit coverage. Hardware integration validation remains dependent on supported test machines.
 
 ## #1 Implement hardware detection
 
@@ -103,3 +103,26 @@ Implementation status: #1, #2, #4, and #5 have initial implementations. #3 has h
 **Test:** Schema validation, golden report, privacy-field rejection, and interrupted-write tests.
 
 **Docs update:** Document every field, unit, and privacy guarantee.
+
+## P1 follow-up backlog
+
+- **#11 Add RTX 4090 profile** — initial provisional profile added; needs physical benchmark promotion.
+- **#12 Add RTX 5090 profile** — initial provisional profile added; needs physical benchmark promotion.
+- **#13 Add A6000 profile** — initial provisional profile added; needs physical benchmark promotion.
+- **#14 Add install diagnostics** — categorize image-pull, GPU-runtime, model-load, health, and first-token failures.
+- **#15 Add uninstall** — remove generated containers/config with an explicit, separate choice for persistent volumes.
+- **#16 Add logs command** — implemented for vLLM and Open WebUI.
+- **#17 Add update** — implemented for versions pinned in the generated Compose file.
+- **#18 Benchmark submission schema** — implemented as versioned report/payload schema.
+- **#19 Benchmark result validation** — privacy and required-metric validation implemented; server-side validation remains.
+- **#20 README quickstart** — implemented; terminal recording remains a launch asset.
+
+## P2 backlog — do not pull into Week 1
+
+- **#21 Ollama backend**
+- **#22 AMD detection and runtime profiles**
+- **#23 Apple Silicon detection and runtime profiles**
+- **#24 Windows WSL support** — promoted and implemented early by product decision.
+- **#25 Model download progress UI**
+- **#26 Benchmark permalink service**
+- **#27 Community leaderboard**

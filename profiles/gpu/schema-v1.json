@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlocal.dev/schemas/gpu-profile-v1.json",
+  "title": "OpenLocal GPU profile",
+  "type": "object",
+  "required": ["schema_version", "id", "vendor", "match_names", "vram_gb", "status"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"type": "string"},
+    "vendor": {"const": "nvidia"},
+    "match_names": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "vram_gb": {"type": "number", "exclusiveMinimum": 0},
+    "status": {"enum": ["provisional", "benchmarked"]}
+  }
+}

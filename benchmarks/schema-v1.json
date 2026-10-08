@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlocal.dev/schemas/benchmark-v1.json",
+  "title": "OpenLocal benchmark report",
+  "type": "object",
+  "required": ["schema_version", "benchmark_version", "created_at", "hardware", "model", "runtime", "workload", "results", "privacy"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "benchmark_version": {"const": "1.0"},
+    "hardware": {"type": "object"},
+    "model": {"type": "object", "required": ["id"]},
+    "runtime": {"type": "object"},
+    "workload": {"type": "object", "required": ["id", "prompt_sha256", "prompt_content_included"]},
+    "results": {"type": "array", "minItems": 1},
+    "privacy": {
+      "type": "object",
+      "properties": {
+        "prompt_content": {"const": false},
+        "hostname": {"const": false},
+        "username": {"const": false},
+        "ip_address": {"const": false}
+      },
+      "required": ["prompt_content", "hostname", "username", "ip_address"]
+    }
+  }
+}

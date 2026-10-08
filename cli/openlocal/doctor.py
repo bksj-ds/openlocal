@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
 import json
-import os
-from pathlib import Path
 import platform
 import re
 import shutil
 import subprocess
 import sys
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
+from dataclasses import asdict, dataclass
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -80,7 +79,11 @@ def _os_details() -> tuple[str, str | None, int | None]:
             values[key] = value.strip().strip('"')
     except OSError:
         return platform.system() or "Unknown", platform.release() or None, None
-    return values.get("PRETTY_NAME", values.get("NAME", "Linux")), values.get("VERSION_ID"), None
+    return (
+        values.get("PRETTY_NAME", values.get("NAME", "Linux")),
+        values.get("VERSION_ID"),
+        None,
+    )
 
 
 def _memory_gb() -> float | None:
@@ -207,9 +210,7 @@ def _wsl_probe(runner: Runner) -> tuple[bool, str | None]:
 
 
 def _docker_probe(runner: Runner) -> tuple[bool, str | None, str | None]:
-    result = runner(
-        ["docker", "version", "--format", "{{.Server.Version}}|{{.Server.Os}}"]
-    )
+    result = runner(["docker", "version", "--format", "{{.Server.Version}}|{{.Server.Os}}"])
     if result.returncode != 0:
         return False, None, None
     parts = [part.strip() for part in result.stdout.split("|", 1)]
@@ -223,7 +224,9 @@ def collect_snapshot(runner: Runner = _run) -> dict[str, object]:
     os_name, os_version, os_build = _os_details()
     gpus = detect_nvidia_gpus(runner)
     docker_ok, docker_version, docker_server_os = _docker_probe(runner)
-    compose_ok, compose_version = _version_probe(runner, ["docker", "compose", "version", "--short"])
+    compose_ok, compose_version = _version_probe(
+        runner, ["docker", "compose", "version", "--short"]
+    )
     toolkit_ok, toolkit_version = _toolkit_probe(runner)
     wsl_ok, wsl_version = _wsl_probe(runner)
     disk = shutil.disk_usage(Path.cwd())
@@ -273,7 +276,11 @@ def collect_snapshot(runner: Runner = _run) -> dict[str, object]:
             "version": toolkit_version,
             "required": linux_supported,
         },
-        "wsl": {"available": wsl_ok, "version": wsl_version, "required": windows_supported},
+        "wsl": {
+            "available": wsl_ok,
+            "version": wsl_version,
+            "required": windows_supported,
+        },
         "runtime_path": (
             "docker-desktop-wsl2"
             if windows_supported
@@ -286,7 +293,11 @@ def collect_snapshot(runner: Runner = _run) -> dict[str, object]:
             "free_gb": round(disk.free / 1024**3, 1),
             "total_gb": round(disk.total / 1024**3, 1),
         },
-        "status": {"ready": ready, "message": "Ready for local inference" if ready else "Not ready", "blockers": blockers},
+        "status": {
+            "ready": ready,
+            "message": "Ready for local inference" if ready else "Not ready",
+            "blockers": blockers,
+        },
     }
 
 

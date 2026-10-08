@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
 import os
-from pathlib import Path
 import sys
-from typing import Any, Iterable
+from collections.abc import Iterable
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -31,6 +32,8 @@ REQUIRED_SECTIONS = {
     "estimates": {"vram_gb", "status", "basis"},
 }
 
+GPU_REQUIRED = {"schema_version", "id", "vendor", "match_names", "vram_gb", "status"}
+
 
 def _profile_directories(explicit: Path | None = None) -> Iterable[Path]:
     if explicit is not None:
@@ -44,14 +47,25 @@ def _profile_directories(explicit: Path | None = None) -> Iterable[Path]:
     yield Path(sys.prefix) / "share" / "openlocal" / "profiles" / "models"
 
 
+def _gpu_profile_directories() -> Iterable[Path]:
+    configured = os.environ.get("OPENLOCAL_GPU_PROFILE_DIR")
+    if configured:
+        yield Path(configured)
+    yield Path.cwd() / "profiles" / "gpu"
+    yield Path(__file__).resolve().parents[2] / "profiles" / "gpu"
+    yield Path(sys.prefix) / "share" / "openlocal" / "profiles" / "gpu"
+
+
 def validate_profile(profile: object, source: str = "profile") -> dict[str, Any]:
     if not isinstance(profile, dict):
         raise ProfileError(f"{source}: root must be a mapping")
     if profile.get("schema_version") != 1:
         raise ProfileError(f"{source}: schema_version must be 1")
     profile_id = profile.get("id")
-    if not isinstance(profile_id, str) or not profile_id or any(
-        character not in "abcdefghijklmnopqrstuvwxyz0123456789-" for character in profile_id
+    if (
+        not isinstance(profile_id, str)
+        or not profile_id
+        or any(character not in "abcdefghijklmnopqrstuvwxyz0123456789-" for character in profile_id)
     ):
         raise ProfileError(f"{source}: id must contain lowercase letters, digits, and hyphens")
     for section, required in REQUIRED_SECTIONS.items():
@@ -103,24 +117,77 @@ def load_profiles(directory: Path | None = None) -> list[dict[str, Any]]:
     return profiles
 
 
+def load_gpu_profiles() -> list[dict[str, Any]]:
+    selected = next(
+        (
+            candidate
+            for candidate in _gpu_profile_directories()
+            if candidate.is_dir() and list(candidate.glob("*.yaml"))
+        ),
+        None,
+    )
+    if selected is None:
+        return []
+    profiles: list[dict[str, Any]] = []
+    for path in sorted(selected.glob("*.yaml")):
+        try:
+            value = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except (OSError, yaml.YAMLError) as exc:
+            raise ProfileError(f"{path}: cannot read GPU profile: {exc}") from exc
+        if not isinstance(value, dict) or GPU_REQUIRED - value.keys():
+            raise ProfileError(f"{path}: invalid GPU profile")
+        if value["schema_version"] != 1 or value["status"] not in {"provisional", "benchmarked"}:
+            raise ProfileError(f"{path}: unsupported GPU profile values")
+        if not isinstance(value["match_names"], list) or not value["match_names"]:
+            raise ProfileError(f"{path}: match_names must be a non-empty list")
+        profiles.append(value)
+    return profiles
+
+
+def match_gpu_profiles(snapshot: dict[str, Any], gpu_profiles: list[dict[str, Any]]) -> list[str]:
+    gpu = snapshot.get("gpu", {})
+    devices = gpu.get("devices", []) if isinstance(gpu, dict) else []
+    matches: list[str] = []
+    for device in devices:
+        model = str(device.get("model", "")).casefold()
+        vendor = str(device.get("vendor", gpu.get("vendor", ""))).casefold()
+        for profile in gpu_profiles:
+            if str(profile["vendor"]).casefold() != vendor:
+                continue
+            if any(str(name).casefold() in model for name in profile["match_names"]):
+                matches.append(profile["id"])
+                break
+    return matches
+
+
+def profile_compatible(snapshot: dict[str, Any], profile: dict[str, Any]) -> bool:
+    gpu = snapshot.get("gpu", {})
+    devices = gpu.get("devices", []) if isinstance(gpu, dict) else []
+    if not devices:
+        return False
+    largest_vram = max(float(device.get("vram_gb", 0)) for device in devices)
+    ram_gb = float(snapshot.get("ram_gb") or 0)
+    return (
+        profile["hardware"]["gpu_vendor"] == gpu.get("vendor")
+        and float(profile["hardware"]["min_vram_gb"]) <= largest_vram
+        and float(profile["hardware"]["min_ram_gb"]) <= ram_gb + 1.0
+        and int(profile["hardware"]["min_gpu_count"]) <= int(gpu.get("count") or 0)
+    )
+
+
 def recommend(snapshot: dict[str, Any], profiles: list[dict[str, Any]]) -> list[Recommendation]:
     gpu = snapshot.get("gpu", {})
     devices = gpu.get("devices", []) if isinstance(gpu, dict) else []
     if not devices:
         return []
     largest_vram = max(float(device.get("vram_gb", 0)) for device in devices)
-    vendor = gpu.get("vendor")
-    ram_gb = float(snapshot.get("ram_gb") or 0)
-    gpu_count = int(gpu.get("count") or 0)
-    eligible = [
-        profile
-        for profile in profiles
-        if profile["hardware"]["gpu_vendor"] == vendor
-        and float(profile["hardware"]["min_vram_gb"]) <= largest_vram
-        and float(profile["hardware"]["min_ram_gb"]) <= ram_gb
-        and int(profile["hardware"]["min_gpu_count"]) <= gpu_count
-    ]
-    eligible.sort(key=lambda item: (float(item["model"]["parameters_b"]), float(item["estimates"]["vram_gb"])))
+    eligible = [profile for profile in profiles if profile_compatible(snapshot, profile)]
+    eligible.sort(
+        key=lambda item: (
+            float(item["model"]["parameters_b"]),
+            float(item["estimates"]["vram_gb"]),
+        )
+    )
     if not eligible:
         return []
 
@@ -143,13 +210,20 @@ def recommend(snapshot: dict[str, Any], profiles: list[dict[str, Any]]) -> list[
     return recommendations
 
 
-def result_document(snapshot: dict[str, Any], recommendations: list[Recommendation]) -> dict[str, Any]:
+def result_document(
+    snapshot: dict[str, Any], recommendations: list[Recommendation]
+) -> dict[str, Any]:
+    try:
+        hardware_profile_ids = match_gpu_profiles(snapshot, load_gpu_profiles())
+    except ProfileError:
+        hardware_profile_ids = []
     return {
         "schema_version": "1.0",
         "hardware": {
             "gpu": snapshot.get("gpu"),
             "ram_gb": snapshot.get("ram_gb"),
             "runtime_path": snapshot.get("runtime_path"),
+            "profile_ids": hardware_profile_ids,
         },
         "recommendations": [
             {
@@ -170,9 +244,10 @@ def result_document(snapshot: dict[str, Any], recommendations: list[Recommendati
 def format_recommendations(snapshot: dict[str, Any], recommendations: list[Recommendation]) -> str:
     gpu = snapshot.get("gpu", {})
     devices = gpu.get("devices", []) if isinstance(gpu, dict) else []
-    detected = ", ".join(
-        f"{device.get('model')} / {device.get('vram_gb')} GB" for device in devices
-    ) or "No GPU detected"
+    detected = (
+        ", ".join(f"{device.get('model')} / {device.get('vram_gb')} GB" for device in devices)
+        or "No GPU detected"
+    )
     lines = ["OpenLocal Recommendations", "", f"Detected hardware     {detected}"]
     if not recommendations:
         return "\n".join(lines + ["", "No compatible profile found."])
@@ -197,5 +272,9 @@ def format_recommendations(snapshot: dict[str, Any], recommendations: list[Recom
 
 
 def recommendations_json(snapshot: dict[str, Any], recommendations: list[Recommendation]) -> str:
-    return json.dumps(result_document(snapshot, recommendations), indent=2, ensure_ascii=False, sort_keys=True)
-
+    return json.dumps(
+        result_document(snapshot, recommendations),
+        indent=2,
+        ensure_ascii=False,
+        sort_keys=True,
+    )

@@ -4,7 +4,13 @@ import json
 import unittest
 from unittest.mock import patch
 
-from openlocal.doctor import CommandResult, as_json, collect_snapshot, detect_nvidia_gpus, format_human
+from openlocal.doctor import (
+    CommandResult,
+    as_json,
+    collect_snapshot,
+    detect_nvidia_gpus,
+    format_human,
+)
 
 
 class FakeRunner:
@@ -51,13 +57,23 @@ class SnapshotTests(unittest.TestCase):
                 "--format=csv,noheader,nounits",
             ): CommandResult(0, "NVIDIA RTX 4090, 24564, 580.10"),
             ("nvidia-smi",): CommandResult(0, "NVIDIA-SMI 580.10 CUDA Version: 13.0"),
-            ("docker", "version", "--format", "{{.Server.Version}}|{{.Server.Os}}"): CommandResult(0, "28.4.0|linux"),
+            (
+                "docker",
+                "version",
+                "--format",
+                "{{.Server.Version}}|{{.Server.Os}}",
+            ): CommandResult(0, "28.4.0|linux"),
             ("docker", "compose", "version", "--short"): CommandResult(0, "2.39.4"),
-            ("nvidia-ctk", "--version"): CommandResult(0, "NVIDIA Container Toolkit CLI version 1.18.0"),
+            ("nvidia-ctk", "--version"): CommandResult(
+                0, "NVIDIA Container Toolkit CLI version 1.18.0"
+            ),
         }
         runner = FakeRunner(responses)
         with (
-            patch("openlocal.doctor._os_details", return_value=("Ubuntu 24.04.3 LTS", "24.04", None)),
+            patch(
+                "openlocal.doctor._os_details",
+                return_value=("Ubuntu 24.04.3 LTS", "24.04", None),
+            ),
             patch("openlocal.doctor.platform.system", return_value="Linux"),
             patch("openlocal.doctor.platform.machine", return_value="x86_64"),
             patch("openlocal.doctor.platform.processor", return_value="AMD Ryzen 9 7950X"),
@@ -79,13 +95,23 @@ class SnapshotTests(unittest.TestCase):
                 "--format=csv,noheader,nounits",
             ): CommandResult(0, "NVIDIA RTX 4090, 24564, 580.10"),
             ("nvidia-smi",): CommandResult(0, "NVIDIA-SMI 580.10 CUDA Version: 13.0"),
-            ("docker", "version", "--format", "{{.Server.Version}}|{{.Server.Os}}"): CommandResult(0, "29.0.0|linux"),
+            (
+                "docker",
+                "version",
+                "--format",
+                "{{.Server.Version}}|{{.Server.Os}}",
+            ): CommandResult(0, "29.0.0|linux"),
             ("docker", "compose", "version", "--short"): CommandResult(0, "2.39.4"),
-            ("wsl.exe", "--list", "--verbose"): CommandResult(0, "NAME STATE VERSION\n* Ubuntu Stopped 2"),
+            ("wsl.exe", "--list", "--verbose"): CommandResult(
+                0, "NAME STATE VERSION\n* Ubuntu Stopped 2"
+            ),
             ("wsl.exe", "--version"): CommandResult(0, "WSL version: 2.6.1.0"),
         }
         with (
-            patch("openlocal.doctor._os_details", return_value=("Windows 11", "10.0.26100", 26100)),
+            patch(
+                "openlocal.doctor._os_details",
+                return_value=("Windows 11", "10.0.26100", 26100),
+            ),
             patch("openlocal.doctor.platform.system", return_value="Windows"),
             patch("openlocal.doctor._memory_gb", return_value=64.0),
         ):

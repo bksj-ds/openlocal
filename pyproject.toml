@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openlocal"
-version = "0.0.1.dev0"
+version = "0.1.0a1"
 description = "Find, run, and benchmark the best local LLM configuration for your hardware."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -20,6 +20,9 @@ classifiers = [
 ]
 dependencies = ["PyYAML>=6.0.2,<7"]
 
+[project.optional-dependencies]
+dev = ["ruff==0.16.10"]
+
 [project.scripts]
 openlocal = "openlocal.cli:main"
 
@@ -32,3 +35,9 @@ where = ["cli"]
 [tool.setuptools.data-files]
 "share/openlocal/profiles" = ["profiles/schema-v1.json"]
 "share/openlocal/profiles/models" = ["profiles/models/*.yaml"]
+"share/openlocal/profiles/gpu" = ["profiles/gpu/*.yaml", "profiles/gpu/schema-v1.json"]
+"share/openlocal/benchmarks" = ["benchmarks/schema-v1.json"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100

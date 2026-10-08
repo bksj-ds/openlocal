@@ -1,0 +1,9 @@
+schema_version: 1
+id: nvidia-rtx-a6000-48gb
+vendor: nvidia
+match_names:
+  - NVIDIA RTX A6000
+  - NVIDIA A6000
+vram_gb: 48
+status: provisional
+notes: Initial community benchmark target; runtime profiles remain benchmark-gated.

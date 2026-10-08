@@ -24,7 +24,20 @@ v0.1의 사용자 흐름은 다음 네 단계에 집중합니다.
 Hardware -> Recommendation -> Run -> Benchmark
 ```
 
-현재 구현된 명령은 `doctor`와 `recommend`입니다. 나머지 명령은 CLI 계약에 따라 차례대로 구현합니다.
+v0.1 alpha 명령을 모두 구현했습니다.
+
+```bash
+openlocal install --dry-run
+openlocal install --ui
+openlocal start
+openlocal status
+openlocal logs vllm
+openlocal bench
+openlocal stop
+openlocal update
+```
+
+설치는 OpenAI 호환 `/v1/models` 조회와 첫 token 생성이 모두 성공해야 완료됩니다. `--dry-run`은 파일 작성, image pull, container 시작 없이 생성될 Compose를 보여줍니다.
 
 ## 차별점
 
